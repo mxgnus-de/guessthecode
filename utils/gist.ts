@@ -48,13 +48,15 @@ export function getRandomGist(gists: Gist[]): Gist {
    })[Math.floor(Math.random() * gists.length)];
 }
 
-export function getRandomLanguages(): string[] {
+export function getRandomLanguages(notinclude: string): string[] {
    const languages = getLanguages();
    const randomLanguages: string[] = [];
    while (randomLanguages.length < 3) {
       const lang = languages[Math.floor(Math.random() * languages.length)];
-      if (!randomLanguages.includes(lang)) {
-         randomLanguages.push(lang);
+      if (lang.toLowerCase() !== notinclude.toLowerCase()) {
+         if (!randomLanguages.includes(lang)) {
+            randomLanguages.push(lang);
+         }
       }
    }
    return randomLanguages;
@@ -102,16 +104,7 @@ export function getBestGist(gists: Gist[]): Gist {
       if (isValidLanguage(firstFileLanguage)) goodGists.push(gist);
    }
 
-   const bestGist = goodGists.reduce((best, current) => {
-      if (
-         best.files[Object.keys(best.files)[0]].size <
-         current.files[Object.keys(current.files)[0]].size
-      ) {
-         return current;
-      } else {
-         return best;
-      }
-   }, goodGists[0]);
+   const bestGist = getRandomGist(goodGists);
    return bestGist;
 }
 
@@ -123,9 +116,8 @@ export async function getRandomFinalGist(): Promise<{
    if (!gists) {
       return null;
    }
-   const languages = getRandomLanguages();
    const bestGist = getBestGist(gists);
-   console.log(bestGist);
+   const languages = getRandomLanguages(Object.keys(bestGist.files)[0]);
 
    return { gist: bestGist, languages };
 }
