@@ -115,7 +115,9 @@ export async function getRandomFinalGist(): Promise<{
       return null;
    }
    const bestGist = getBestGist(gists);
-   const languages = getRandomLanguages(Object.keys(bestGist.files)[0]);
+   const languages = getRandomLanguages(
+      bestGist.files[Object.keys(bestGist.files)[0]].language || '',
+   );
 
    return { gist: bestGist, languages };
 }
