@@ -43,9 +43,7 @@ export async function getRandomPublicGists(
 }
 
 export function getRandomGist(gists: Gist[]): Gist {
-   return gists.filter((g) => {
-      if (!Object.keys(g.files).length || Object.keys(g.files)) return false;
-   })[Math.floor(Math.random() * gists.length)];
+   return gists[Math.floor(Math.random() * gists.length)];
 }
 
 export function getRandomLanguages(notinclude: string): string[] {
