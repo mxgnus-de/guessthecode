@@ -31,7 +31,6 @@ const Home: NextPage<SiteProps> = ({}) => {
       const rigthLanguage = (
          Object.values(gist.gist.files)[0].language as string
       ).toLowerCase();
-      console.log(rigthLanguage);
       setRigthLanguages(rigthLanguage);
       setLanguages(gist.languages.concat(rigthLanguage));
       return true;
