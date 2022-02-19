@@ -64,7 +64,7 @@ export const getServerSideProps: GetServerSideProps<SiteProps> = async () => {
 
    return {
       props: {
-         highscores: error ? [] : reponse.data.highscores,
+         highscores: reponse.data.highscores,
       },
    };
 };
