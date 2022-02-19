@@ -6,6 +6,10 @@ import ReactEmbededGist from 'react-embed-gist';
 import { Gist } from 'types/Gist';
 import { CircularProgress } from '@mui/material';
 import { capitalizeFirstLetter } from 'utils/string';
+import { shuffle } from 'utils/array';
+import { signIn, signOut, useSession } from 'next-auth/react';
+import Link from 'next/link';
+import axios from 'axios';
 
 interface SiteProps {}
 
@@ -19,9 +23,12 @@ const Home: NextPage<SiteProps> = ({}) => {
       state: false,
       id: 0,
    });
+   const { data: session } = useSession();
+   console.log(session);
 
    useEffect(() => {
       showGist();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, []);
 
    async function showGist() {
@@ -31,8 +38,9 @@ const Home: NextPage<SiteProps> = ({}) => {
       const rigthLanguage = (
          Object.values(gist.gist.files)[0].language as string
       ).toLowerCase();
+      resetVariables();
       setRigthLanguages(rigthLanguage);
-      setLanguages(gist.languages.concat(rigthLanguage));
+      setLanguages(shuffle(gist.languages.concat(rigthLanguage)));
       return true;
    }
 
@@ -44,11 +52,12 @@ const Home: NextPage<SiteProps> = ({}) => {
    async function startNewGame() {
       setPoints(0);
       await showGist();
-      resetVariables();
    }
 
    return (
       <Wrapper>
+         {!session && <button onClick={() => signIn()}>Login</button>}
+         {session && <button onClick={() => signOut()}>Logout</button>}
          <PointsWrapper>
             <PointsValue>{points}</PointsValue>
             <PointsTitle>Your score</PointsTitle>
@@ -72,7 +81,7 @@ const Home: NextPage<SiteProps> = ({}) => {
                {languages.length ? (
                   <>
                      {languages.map((language, index) => (
-                        <Button
+                        <AnswerButton
                            languageid={index}
                            isWrongButtonClicked={clickedWrongButton}
                            key={index}
@@ -90,9 +99,17 @@ const Home: NextPage<SiteProps> = ({}) => {
                                     id: index,
                                     state: true,
                                  });
-                                 setTimeout(() => {
-                                    startNewGame();
-                                 }, 1500);
+                                 if (session && points !== 0) {
+                                    axios
+                                       .post('/api/highscore', {
+                                          points,
+                                       })
+                                       .catch((err) => {
+                                          console.log(
+                                             'Cannot save hightscore: ' + err,
+                                          );
+                                       });
+                                 }
                               } else {
                                  setClickedRightButton(true);
                                  setPoints((prev) => prev + 50);
@@ -104,11 +121,24 @@ const Home: NextPage<SiteProps> = ({}) => {
                            }}
                         >
                            {capitalizeFirstLetter(language)}
-                        </Button>
+                        </AnswerButton>
                      ))}
                   </>
                ) : null}
             </ButtonWrapper>
+            <ButtonWrapper>
+               {clickedWrongButton.state && (
+                  <Button onClick={startNewGame}>New game</Button>
+               )}
+            </ButtonWrapper>
+            <TextWrapper>
+               {clickedWrongButton.state && <RedText>You loose</RedText>}
+               {clickedWrongButton.state && (
+                  <Link href='/highscore' passHref>
+                     <BlueText className='pointer'>Highscore</BlueText>
+                  </Link>
+               )}
+            </TextWrapper>
          </ContentWrapper>
       </Wrapper>
    );
@@ -177,17 +207,14 @@ const ButtonWrapper = styled.div`
    width: 100%;
    gap: 1rem;
    height: 100%;
+   padding: 5px;
+
+   @media (max-width: 700px) {
+      flex-direction: column;
+   }
 `;
 
-const Button = styled.button<{
-   isRight: boolean;
-   isRightClicked: boolean;
-   languageid: number;
-   isWrongButtonClicked: {
-      id: number;
-      state: boolean;
-   };
-}>`
+const Button = styled.button`
    width: 130px;
    height: 50px;
    border-radius: 50px;
@@ -197,6 +224,17 @@ const Button = styled.button<{
    justify-content: center;
    background-color: #fff;
    cursor: pointer;
+`;
+
+const AnswerButton = styled(Button)<{
+   isRight: boolean;
+   isRightClicked: boolean;
+   languageid: number;
+   isWrongButtonClicked: {
+      id: number;
+      state: boolean;
+   };
+}>`
    ${({ isRight, isRightClicked, isWrongButtonClicked }) => {
       return (isRight && isRightClicked) ||
          (isWrongButtonClicked.state && isRight)
@@ -210,6 +248,31 @@ const Button = styled.button<{
          ? 'background: linear-gradient(109.45deg, #FF7373 -7.86%, rgba(255, 255, 255, 0) 79.2%), #FF4949;'
          : '';
    }}
+`;
+
+const TextWrapper = styled.div`
+   flex-grow: 1;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   width: 100%;
+   height: 100%;
+`;
+
+const Text = styled.span`
+   font-size: 1rem;
+`;
+
+const RedText = styled(Text)`
+   color: red;
+`;
+
+const GreenText = styled(Text)`
+   color: green;
+`;
+
+const BlueText = styled(Text)`
+   color: #3b3bff;
 `;
 
 export default Home;

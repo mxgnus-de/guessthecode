@@ -1,12 +1,18 @@
 import GlobalStyles from 'components/styles';
 import type { AppProps } from 'next/app';
 import '../style/fonts.css';
+import { SessionProvider } from 'next-auth/react';
 
-function GuessTheCode({ Component, pageProps }: AppProps) {
+function GuessTheCode({
+   Component,
+   pageProps: { session, ...pageProps },
+}: AppProps) {
    return (
       <>
          <GlobalStyles />
-         <Component {...pageProps} />
+         <SessionProvider session={session}>
+            <Component {...pageProps} />
+         </SessionProvider>
       </>
    );
 }

@@ -87,6 +87,12 @@ const GlobalStyles = styled.createGlobalStyle`
    select:focus {
       outline: none;
    }
+
+   /** UTILS **/
+
+   .pointer {
+      cursor: pointer;
+   }
 `;
 
 export default GlobalStyles;
