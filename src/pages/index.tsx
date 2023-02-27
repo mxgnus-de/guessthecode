@@ -1,17 +1,24 @@
+import { CircularProgress } from '@mui/material';
 import type { NextPage } from 'next';
 import { useEffect, useState } from 'react';
-import styled from 'styled-components';
-import { getRandomFinalGist } from 'utils/gist';
 import ReactEmbededGist from 'react-embed-gist';
+import styled, { css } from 'styled-components';
 import { Gist } from 'types/Gist';
-import { CircularProgress } from '@mui/material';
-import { capitalizeFirstLetter } from 'utils/string';
 import { shuffle } from 'utils/array';
-import { signIn, signOut, useSession } from 'next-auth/react';
-import Link from 'next/link';
-import axios from 'axios';
+import { getRandomFinalGist } from 'utils/gist';
+import { capitalizeFirstLetter } from 'utils/string';
 
 interface SiteProps {}
+
+interface AnswerButtonProps {
+   isRight: boolean;
+   isRightClicked: boolean;
+   isWrongButtonClicked: {
+      state: boolean;
+      id: number;
+   };
+   languageid: number;
+}
 
 const Home: NextPage<SiteProps> = ({}) => {
    const [points, setPoints] = useState(0);
@@ -23,8 +30,6 @@ const Home: NextPage<SiteProps> = ({}) => {
       state: false,
       id: 0,
    });
-   const { data: session } = useSession();
-   console.log(session);
 
    useEffect(() => {
       showGist();
@@ -56,8 +61,6 @@ const Home: NextPage<SiteProps> = ({}) => {
 
    return (
       <Wrapper>
-         {!session && <button onClick={() => signIn()}>Login</button>}
-         {session && <button onClick={() => signOut()}>Logout</button>}
          <PointsWrapper>
             <PointsValue>{points}</PointsValue>
             <PointsTitle>Your score</PointsTitle>
@@ -68,7 +71,7 @@ const Home: NextPage<SiteProps> = ({}) => {
                <Code>
                   {gist ? (
                      <ReactEmbededGist
-                        gist={(gist.owner.login + '/' + gist.id) as any}
+                        gist={`${gist.owner.login}/${gist.id}`}
                         titleClass='gist-title'
                         file={Object.keys(gist.files)[0]}
                      />
@@ -99,20 +102,10 @@ const Home: NextPage<SiteProps> = ({}) => {
                                     id: index,
                                     state: true,
                                  });
-                                 if (session && points !== 0) {
-                                    axios
-                                       .post('/api/highscore', {
-                                          points,
-                                       })
-                                       .catch((err) => {
-                                          console.log(
-                                             'Cannot save hightscore: ' + err,
-                                          );
-                                       });
-                                 }
                               } else {
                                  setClickedRightButton(true);
                                  setPoints((prev) => prev + 50);
+
                                  setTimeout(async () => {
                                     await showGist();
                                     resetVariables();
@@ -133,11 +126,6 @@ const Home: NextPage<SiteProps> = ({}) => {
             </ButtonWrapper>
             <TextWrapper>
                {clickedWrongButton.state && <RedText>You loose</RedText>}
-               {clickedWrongButton.state && (
-                  <Link href='/highscore' passHref>
-                     <BlueText className='pointer'>Highscore</BlueText>
-                  </Link>
-               )}
             </TextWrapper>
          </ContentWrapper>
       </Wrapper>
@@ -163,11 +151,13 @@ const PointsWrapper = styled.div`
 const PointsValue = styled.span`
    font-size: 4rem;
    font-weight: 800;
+   color: #fff;
 `;
 
 const PointsTitle = styled.span`
    font-size: 1.5rem;
    font-weight: 500;
+   color: #fff;
 `;
 
 const ContentWrapper = styled.div`
@@ -192,6 +182,7 @@ const CodeQuestion = styled.span`
    font-weight: 600;
    align-self: flex-start;
    font-family: 'Poppins', sans-serif;
+   color: #fff;
 `;
 
 const Code = styled.div`
@@ -206,8 +197,7 @@ const ButtonWrapper = styled.div`
    align-items: center;
    width: 100%;
    gap: 1rem;
-   height: 100%;
-   padding: 5px;
+   padding: 1rem;
 
    @media (max-width: 700px) {
       flex-direction: column;
@@ -226,28 +216,30 @@ const Button = styled.button`
    cursor: pointer;
 `;
 
-const AnswerButton = styled(Button)<{
-   isRight: boolean;
-   isRightClicked: boolean;
-   languageid: number;
-   isWrongButtonClicked: {
-      id: number;
-      state: boolean;
-   };
-}>`
-   ${({ isRight, isRightClicked, isWrongButtonClicked }) => {
-      return (isRight && isRightClicked) ||
-         (isWrongButtonClicked.state && isRight)
-         ? 'background: linear-gradient(119.32deg, #7BFF2A 16.26%, rgba(255, 255, 255, 0) 67.98%), #59EB00;'
-         : '';
-   }}
+const AnswerButton = styled(Button)<AnswerButtonProps>`
+   ${({ isRight, isRightClicked, isWrongButtonClicked }) =>
+      (isRight && isRightClicked) || (isWrongButtonClicked.state && isRight)
+         ? css`
+              background: linear-gradient(
+                    119.32deg,
+                    #7bff2a 16.26%,
+                    rgba(255, 255, 255, 0) 67.98%
+                 ),
+                 #59eb00;
+           `
+         : ''}
 
-   ${({ languageid, isWrongButtonClicked }) => {
-      return languageid === isWrongButtonClicked.id &&
-         isWrongButtonClicked.state
-         ? 'background: linear-gradient(109.45deg, #FF7373 -7.86%, rgba(255, 255, 255, 0) 79.2%), #FF4949;'
-         : '';
-   }}
+   ${({ languageid, isWrongButtonClicked }) =>
+      languageid === isWrongButtonClicked.id && isWrongButtonClicked.state
+         ? css`
+              background: linear-gradient(
+                    109.45deg,
+                    #ff7373 -7.86%,
+                    rgba(255, 255, 255, 0) 79.2%
+                 ),
+                 #ff4949;
+           `
+         : ''}
 `;
 
 const TextWrapper = styled.div`
@@ -265,10 +257,6 @@ const Text = styled.span`
 
 const RedText = styled(Text)`
    color: red;
-`;
-
-const GreenText = styled(Text)`
-   color: green;
 `;
 
 const BlueText = styled(Text)`

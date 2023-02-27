@@ -1,6 +1,6 @@
-export function shuffle(array: any[]): any[] {
-   let currentIndex = array.length,
-      randomIndex;
+export function shuffle<T>(array: T[]): T[] {
+   let currentIndex = array.length;
+   let randomIndex: number;
 
    while (currentIndex != 0) {
       randomIndex = Math.floor(Math.random() * currentIndex);

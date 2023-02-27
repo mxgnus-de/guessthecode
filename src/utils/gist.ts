@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Gist } from 'types/Gist';
+import { shuffle } from './array';
 
 const gistCache = new Map<string, Gist[]>();
 
@@ -13,32 +14,14 @@ export async function getRandomPublicGists(
    publicgisturl: string,
 ): Promise<Gist[] | null> {
    const cachedGit = gistCache.get(publicgisturl);
-   if (cachedGit) {
-      return cachedGit;
-   } else {
-      let err = false;
-      const res = await axios
-         .get(publicgisturl, {
-            headers: {
-               authorization: Buffer.from(
-                  'Z2hwX2FBUU1ibDNZeThrYjVkb2RZT0dhUnYzeVpsclc0WDFiMVBmMA==',
-                  'base64',
-               ).toString('utf8'),
-            },
-         })
-         .catch((err) => {
-            err = true;
-            err;
-            return;
-         });
+   if (cachedGit) return cachedGit;
 
-      if (err || !res || res.status !== 200 || !res.data || !res.data.length) {
-         return null;
-      }
-
-      const gists = res.data as Gist[];
-      gistCache.set(publicgisturl, gists);
-      return gists;
+   try {
+      const { data } = await axios.get<Gist[]>(publicgisturl);
+      gistCache.set(publicgisturl, data);
+      return data;
+   } catch (err) {
+      return null;
    }
 }
 
@@ -49,6 +32,7 @@ export function getRandomGist(gists: Gist[]): Gist {
 export function getRandomLanguages(notinclude: string): string[] {
    const languages = getLanguages();
    const randomLanguages: string[] = [];
+
    while (randomLanguages.length < 3) {
       const lang = languages[Math.floor(Math.random() * languages.length)];
       if (lang.toLowerCase() !== notinclude.toLowerCase()) {
@@ -57,7 +41,7 @@ export function getRandomLanguages(notinclude: string): string[] {
          }
       }
    }
-   return randomLanguages;
+   return shuffle(randomLanguages);
 }
 
 export function getLanguages(): string[] {
@@ -89,6 +73,11 @@ export function getLanguages(): string[] {
       'ocaml',
       'crystal',
       'dart',
+      'r',
+      'racket',
+      'coffeescript',
+      'julia',
+      'nim',
    ];
 }
 
@@ -97,8 +86,10 @@ export async function getBestGist(gists: Gist[]): Promise<Gist | null> {
    for (const gist of gists) {
       const firstFile = Object.keys(gist.files)[0];
       if (!firstFile) continue;
+
       const firstFileLanguage = gist.files[firstFile].language;
       if (!firstFileLanguage) continue;
+
       if (isValidLanguage(firstFileLanguage)) goodGists.push(gist);
    }
 
@@ -112,22 +103,16 @@ export async function getRandomFinalGist(): Promise<{
    languages: string[];
 } | null> {
    let gists = await getRandomPublicGists(getRandomPublicGistPage());
-   if (!gists) {
-      return null;
-   }
+   if (!gists) return null;
    let bestGist = await getBestGist(gists);
 
    while (bestGist === null) {
       gists = await getRandomPublicGists(getRandomPublicGistPage());
-      if (!gists) {
-         return null;
-      }
-
+      if (!gists) return null;
       if (bestGist !== null) bestGist = await getBestGist(gists);
    }
 
    if (bestGist === null) return null;
-
    const languages = getRandomLanguages(
       bestGist.files[Object.keys(bestGist.files)[0]].language || '',
    );

@@ -9,21 +9,7 @@ const GlobalStyles = styled.createGlobalStyle`
    }
 
    body {
-      background-image: linear-gradient(
-         to left top,
-         #ff7d41,
-         #ff9333,
-         #ffab23,
-         #ffc40f,
-         #ffdd00,
-         #f5e800,
-         #eaf400,
-         #dcff00,
-         #bfff00,
-         #9dff00,
-         #72ff00,
-         #22ff00
-      );
+      background-image: linear-gradient(to right, #8360c3, #2ebf91);
       background-size: cover;
       background-repeat: no-repeat;
    }
